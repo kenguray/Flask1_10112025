@@ -1,4 +1,5 @@
 from flask import Flask, jsonify
+import random
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
@@ -46,6 +47,26 @@ def about():
 @app.route("/quotes")
 def get_quotes():
     return jsonify(quotes)
+
+@app.route("/quotes/<int:quote_id>")
+def get_quote_by_id(quote_id):
+    # Ищем цитату с заданным id
+    for quote in quotes:
+        if quote["id"] == quote_id:
+            return jsonify(quote)  # Возвращаем найденную цитату
+    
+    # Если цитата не найдена — возвращаем ошибку 404
+    return jsonify({"error": "Цитата не найдена"}), 404
+
+@app.route("/quotes/count")
+def get_quotes_count():
+    count = len(quotes)  # Считаем количество цитат
+    return jsonify({"count": count})  # Возвращаем JSON с ключом "count"
+
+@app.route("/quotes/random")
+def get_random_quote():
+    random_quote = random.choice(quotes)  # Выбираем случайную цитату
+    return jsonify(random_quote)  # Возвращаем её в формате JSON
 
 if __name__ == "__main__":
     app.run(debug=True)
