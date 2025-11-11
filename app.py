@@ -64,7 +64,7 @@ def get_quotes():
 
 @app.route("/quotes", methods=['POST'])
 def create_quote():
-    
+
     data = request.get_json()
     if not data:
         return jsonify({"error": "Нет данных для отправки"}), 400
@@ -133,28 +133,30 @@ def get_random_quote():
 
 @app.route("/quotes/filter", methods=['GET'])
 def filter_quotes():
-    # Получаем параметры запроса (author, rating и др.)
     author = request.args.get('author')
-    rating = request.args.get('rating')
+    rating = request.args.get('rating')  # фильтр «равен»
 
-    # Начинаем с полного списка цитат
     filtered_quotes = quotes
 
-    # Применяем фильтры, если параметры переданы
+    # Фильтр по автору
     if author:
         filtered_quotes = [q for q in filtered_quotes if q["author"] == author]
 
+    # Фильтр по рейтингу (равен указанному значению)
     if rating:
-        # Преобразуем rating в число и проверяем корректность
         try:
             rating_val = int(rating)
             if 1 <= rating_val <= 5:
                 filtered_quotes = [q for q in filtered_quotes if q["rating"] == rating_val]
+                # Если после фильтрации список пуст — значит, цитат с таким рейтингом нет
+                if not filtered_quotes:
+                    return jsonify({"error": "Цитат с таким рейтингом нет"}), 404
+            else:
+                return jsonify({"error": "Рейтинг должен быть от 1 до 5"}), 400
         except (ValueError, TypeError):
-            # Если rating не число — игнорируем фильтр
-            pass
+            return jsonify({"error": "Рейтинг должен быть целым числом"}), 400
 
-    # Если после фильтрации ничего не осталось — ошибка 404
+    # Если после всех фильтров ничего не осталось (и рейтинг не указывался)
     if not filtered_quotes:
         return jsonify({"error": "Цитаты не найдены по заданным фильтрам"}), 404
 
