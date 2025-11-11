@@ -64,6 +64,7 @@ def get_quotes():
 
 @app.route("/quotes", methods=['POST'])
 def create_quote():
+    
     data = request.get_json()
     if not data:
         return jsonify({"error": "Нет данных для отправки"}), 400
