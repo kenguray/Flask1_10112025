@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import random
 
 app = Flask(__name__)
@@ -35,6 +35,11 @@ quotes = [
 ]
 # Нужно больше цитат? https://tproger.ru/devnull/programming-quotes/
 
+def get_next_id():
+    # Возвращает новый уникальный ID для цитаты.
+    if not quotes:
+        return 1
+    return quotes[-1]["id"] + 1
 
 @app.route("/")
 def hello_world():
@@ -44,29 +49,52 @@ def hello_world():
 def about():
     return about_me
 
-@app.route("/quotes")
+@app.route("/quotes", methods=['GET'])
 def get_quotes():
     return jsonify(quotes)
 
-@app.route("/quotes/<int:quote_id>")
+@app.route("/quotes", methods=['POST'])
+def create_quote():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Нет данных для отправки"}), 400
+    if "author" not in data or "text" not in data:
+        return jsonify({"error": "Незаполнены поля автора и текста"}), 400
+
+    new_id = get_next_id()
+    new_quote = {
+        "id": new_id,
+        "author": data["author"],
+        "text": data["text"]
+    }
+    quotes.append(new_quote)
+    return jsonify(new_quote), 201
+
+@app.route("/quotes/<int:quote_id>", methods=['DELETE'])
+def delete_quote(quote_id):
+    for i, quote in enumerate(quotes):
+        if quote["id"] == quote_id:
+            quotes.pop(i)
+            return jsonify({"message": f"Цитата с id {quote_id} удалена."}), 200
+    return jsonify({"error": "Цитата не найдена"}), 404
+
+@app.route("/quotes/<int:quote_id>", methods=['GET'])
 def get_quote_by_id(quote_id):
-    # Ищем цитату с заданным id
     for quote in quotes:
         if quote["id"] == quote_id:
-            return jsonify(quote)  # Возвращаем найденную цитату
-    
-    # Если цитата не найдена — возвращаем ошибку 404
+            return jsonify(quote)
     return jsonify({"error": "Цитата не найдена"}), 404
 
 @app.route("/quotes/count")
 def get_quotes_count():
-    count = len(quotes)  # Считаем количество цитат
-    return jsonify({"count": count})  # Возвращаем JSON с ключом "count"
+    return jsonify({"count": len(quotes)})
 
 @app.route("/quotes/random")
 def get_random_quote():
-    random_quote = random.choice(quotes)  # Выбираем случайную цитату
-    return jsonify(random_quote)  # Возвращаем её в формате JSON
+    if not quotes:
+        return jsonify({"error": "Нет доступных цитат"}), 404
+    random_quote = random.choice(quotes)
+    return jsonify(random_quote)
 
 if __name__ == "__main__":
     app.run(debug=True)
